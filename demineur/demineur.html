@@ -1,0 +1,178 @@
+<!doctype html>
+<html>
+	<head>
+		<title>D&eacute;mineur</title>
+		<script type="text/javascript">
+		var nb_mines = 40;
+		var x = 16;
+		var y = 16;
+		
+		var matrice = new Array();
+		function init()
+		{
+			// creation support html + structure
+			cases_restantes = x * y;
+			
+			var table = document.createElement('TABLE');
+			table.cellSpacing = '0';
+			table.cellPadding = '0';
+			var tbody = document.createElement('TBODY');
+			table.appendChild(tbody);
+			for(var i = 0; i < x; i++)
+			{
+				var tr = document.createElement('TR');
+				tbody.appendChild(tr);
+				var new_column = new Array();
+				for(var j = 0; j < y; j++)
+				{
+					var td = document.createElement('TD');
+					td.width = '24';
+					td.height = '24';
+					td.align = 'center';
+					var btn = document.createElement('INPUT');
+					btn.type = 'button';
+					btn.style.width = '100%';
+					btn.style.height = '100%';
+					btn.x = i;
+					btn.y = j;
+					btn.onclick = clickOnBTN;
+					td.appendChild(btn);
+					tr.appendChild(td);
+					new_column.push({'ptr':td, 'btn':btn, 'value':0});
+				}
+				matrice.push(new_column);
+			}
+
+			// generation des mines
+			var piles = new Array();
+			for(var i = 0; i < nb_mines; i++)
+			{
+				var mine = {'x':Random(0, x - 1), 'y':Random(0, y - 1)};
+				while (MineInArray(piles, mine))
+					mine = {'x':Random(0, x - 1), 'y':Random(0, y - 1)};
+				
+				piles.push(mine);
+				
+				// ajout de la mine
+				matrice[mine.x][mine.y].value = -1;
+				//matrice[mine.x][mine.y].ptr.innerHTML = 'M';
+				incrementeVoisin(mine);
+			}
+			
+			document.getElementById('wrapper').innerHTML = '';
+			document.getElementById('wrapper').appendChild(table);
+		}
+		
+		function incrementeVoisin(mine)
+		{
+			//alert('test : '+mine.x+'/'+mine.y);
+			if (mine.x > 0 && mine.y > 0 && matrice[mine.x - 1][mine.y - 1].value > -1)
+				matrice[mine.x - 1][mine.y  - 1].value++;
+
+			if (mine.x > 0 && matrice[mine.x - 1][mine.y].value > -1)
+				matrice[mine.x - 1][mine.y].value++;
+
+			if (mine.x > 0 && mine.y < y-1 && matrice[mine.x - 1][mine.y + 1].value > -1)
+				matrice[mine.x - 1][mine.y + 1].value++;
+
+			if (mine.y > 0 && matrice[mine.x][mine.y - 1].value > -1)
+				matrice[mine.x][mine.y - 1].value++;
+
+			if (mine.y < y-1 && matrice[mine.x][mine.y + 1].value > -1)
+				matrice[mine.x][mine.y + 1].value++;
+
+			if (mine.x < x-1 && mine.y > 0 && matrice[mine.x + 1][mine.y - 1].value > -1)
+				matrice[mine.x + 1][mine.y - 1].value++;
+
+			if (mine.x < x-1 && matrice[mine.x + 1][mine.y].value > -1)
+				matrice[mine.x + 1][mine.y].value++;
+
+			if (mine.x < x-1 && mine.y < y-1 && matrice[mine.x + 1][mine.y + 1].value > -1)
+				matrice[mine.x + 1][mine.y + 1].value++;
+		}
+
+		function clickOnBTN()
+		{
+			if (matrice[this.x][this.y].value == -1)
+			{ // perdu
+				alert('perdu');
+				end();
+			}
+			else
+			{ // propager si possible
+				propagation(this.x, this.y);
+				
+				if (cases_restantes == nb_mines)
+				{
+					alert('Gagne');
+					end();
+				}
+			}
+		}
+		
+		function propagation(mx, my)
+		{
+			matrice[mx][my].btn = null;
+			if (matrice[mx][my].value == 0)
+			{
+				matrice[mx][my].ptr.innerHTML = '&nbsp;';
+				
+				if (mx > 0 && my > 0 && 	matrice[mx-1][my-1].btn != null) propagation(mx-1, my-1);
+				if (mx > 0 &&               matrice[mx-1][my].btn != null) 	 propagation(mx-1, my);
+				if (mx > 0 && my < y-1 &&   matrice[mx-1][my+1].btn != null) propagation(mx-1, my+1);
+				if (my < y-1 &&             matrice[mx][my+1].btn != null) 	 propagation(mx, my+1);
+				if (mx < x-1 && my < y-1 && matrice[mx+1][my+1].btn != null) propagation(mx+1, my+1);
+				if (mx < x-1 &&             matrice[mx+1][my].btn != null) 	 propagation(mx+1, my);
+				if (mx < x-1 && my > 0 &&   matrice[mx+1][my-1].btn != null) propagation(mx+1, my-1);
+				if (my > 0 &&               matrice[mx][my-1].btn != null) 	 propagation(mx, my-1);
+			}
+			else
+			{
+				matrice[mx][my].ptr.innerHTML = matrice[mx][my].value;
+			}
+			
+			cases_restantes--;
+		}
+
+		function end()
+		{
+			for(var i = 0; i < x; i++)
+			{
+				for(var j = 0; j < y; j++)
+				{
+					var value = matrice[i][j].value;
+					if (value == -1)
+						value = 'M';
+					else if (value == 0)
+						value = '&nbsp;';
+					
+					matrice[i][j].ptr.innerHTML = value;
+				}
+			}
+		}
+
+		
+		window.onload = init;
+		
+		function Random(min, max)
+		{
+			return Math.floor(Math.random() * (max - min + 1)) + min;
+		}
+		
+		function MineInArray(mines, mine)
+		{
+			var i = 0;
+			while(i < mines.length && (mines[i].x != mine.x || mines[i].y != mine.y))
+				i++;
+			
+			return (i < mines.length);
+		}
+		</script>
+	</head>
+	<body>
+		
+		<div id="wrapper">
+			Initialisation...
+		</div>
+	</body>
+</html>
